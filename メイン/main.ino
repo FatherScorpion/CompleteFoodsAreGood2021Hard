@@ -6,6 +6,12 @@ void setup() {
 gain_step = a;
 }
 
+ボイドループ() {
+  int値 =デジタル読み取り(12 ));
+シリアル。出力 (値)
+  遅延(100);
+}
+
 ボイドAE_TSL2572::ライトゲイン() {
   スイッチ(gain_step) {
     ケース0x00:// 1/6
@@ -46,11 +52,7 @@ gain_step = a;
   }
 }
 
-void loop() {
-  int value = digitalRead(12);
-  Serial.println(value);
-  delay(100);
-}
+
 
 # 「アルドゥイノ.h」が含まれます。
 # <Wire.h>を含む
