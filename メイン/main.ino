@@ -6,6 +6,7 @@ void setup() {
 gain_step = a;
 }
 
+
 ボイドループ() {
   int値 =デジタル読み取り(12 ));
 シリアル。出力 (値)
@@ -122,3 +123,4 @@ gain_step = a;
     const uint8_t TSL2572_C1DATA   = 0x16;
     定数 uint8_t TSL2572_C1DATAH = 0x17;
 };
+
