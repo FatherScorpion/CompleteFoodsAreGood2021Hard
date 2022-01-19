@@ -19,6 +19,7 @@ class AE_TSL2572 {
     uint16_t GetLux16();
     uint8_t GetGainStep();
     uint8_t GetIntegrationTime();
+    uint8_t GetAdc0();
 
   private:
     void ReadAdc();
@@ -71,4 +72,3 @@ class AE_TSL2572 {
     const uint8_t TSL2572_C1DATA   = 0x16;
     const uint8_t TSL2572_C1DATAH  = 0x17;
 };
-

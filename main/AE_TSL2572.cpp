@@ -172,3 +172,6 @@ uint8_t AE_TSL2572::GetIntegrationTime() {
   return atime;
 }
 
+uint8_t AE_TSL2572::GetAdc0(){
+  return adc0;  
+}
