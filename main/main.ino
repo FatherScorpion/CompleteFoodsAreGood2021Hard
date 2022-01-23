@@ -24,7 +24,6 @@ byte atime_cnt = 0xFF;
 bool shooting=false;
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
 
   Wire.begin();
@@ -44,8 +43,8 @@ void setup() {
   }
 }
 
-void watchFire(){3
-  if(TSL2572.GetAdc0()>50){
+void watchFire(){
+  if(TSL2572.GetAdc0()>25){
     if(!shooting){
         Serial.println("Fire"); 
         shooting=true;
@@ -63,6 +62,4 @@ void loop() {
   watchFire();
   //自動ゲイン調整
   TSL2572.SetGainAuto();
-
-  digitalWrite(LED_BUILTIN, HIGH);
 }
