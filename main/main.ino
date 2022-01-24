@@ -33,7 +33,7 @@ const char PASS[] = "kanzen";
 
 WebServer server(80);
 
-void handleTest(){
+void handleTest(){ // ArduinoJsonのテスト
   StaticJsonDocument<200> doc;
   char json_string[255];
   doc["hello"] = "wolrd";
