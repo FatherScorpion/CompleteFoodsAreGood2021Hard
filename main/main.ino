@@ -13,6 +13,7 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include <ArduinoJson.h>
 #include "AE_TSL2572.h"
 AE_TSL2572 TSL2572;
 
@@ -33,7 +34,12 @@ const char PASS[] = "kanzen";
 WebServer server(80);
 
 void handleTest(){
-  server.send(200,"text/plain","Hello from ESP32!");
+  StaticJsonDocument<200> doc;
+  char json_string[255];
+  doc["hello"] = "wolrd";
+  serializeJson(doc, json_string, sizeof(json_string));
+  
+  server.send(200,"application/json",json_string);
 }
 
 void setup() {
