@@ -28,18 +28,65 @@ byte gain_step = 0;
 byte atime_cnt = 0xFF;
 bool shooting=false;
 
-const char SSID[] = "APEX-COMP";
-const char PASS[] = "kanzen";
+int type = 0;
+int backColor = 0;
+int textColor = 0;
+int magazineCapacity = 30;
+double reloadDist = 0;
+
+const char SSID[] = "APEX-COMP"; // ESP32ap
+const char PASS[] = "kanzen"; // 12345678
 
 WebServer server(80);
 
 void handleTest(){ // ArduinoJsonのテスト
-  StaticJsonDocument<200> doc;
+  DynamicJsonDocument doc(200);
+  String body = server.arg("plain");
+  Serial.println(body);
+  deserializeJson(doc, body);
+
+  const char* json_text = doc["hoge"];
+  Serial.println(json_text);
+  json_text = doc["tibi"];
+  Serial.println(json_text);
+  
   char json_string[255];
-  doc["hello"] = "wolrd";
   serializeJson(doc, json_string, sizeof(json_string));
   
   server.send(200,"application/json",json_string);
+}
+
+void handleUpdate(){ // ArduinoJsonのテスト
+  DynamicJsonDocument doc(200);
+  String input = server.arg("plain");
+  Serial.println(input);
+  DeserializationError error = deserializeJson(doc, input);
+
+  if (error) {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.c_str());
+    server.send(400,"text/plain",error.c_str());
+    return;
+  }
+
+  type = doc["type"]; // 1
+  backColor = doc["backColor"]; // 1
+  textColor = doc["textColor"]; // 1
+  magazineCapacity = doc["magazineCapacity"]; // 30
+  reloadDist = doc["reloadDist"]; // 10
+
+  Serial.print("type:");
+  Serial.println(type);
+  Serial.print("textColor:");
+  Serial.println(textColor);
+  Serial.print("backColor:");
+  Serial.println(backColor);
+  Serial.print("magazineCapacity:");
+  Serial.println(magazineCapacity);
+  Serial.print("reloadDist:");
+  Serial.println(reloadDist);
+  
+  server.send(200,"text/plain","success");
 }
 
 void setup() {
@@ -72,7 +119,8 @@ void setup() {
   Serial.printf("IPAddress: ");
   Serial.println(ip);
 
-  server.on("/",handleTest);
+  server.on("/", HTTP_POST, handleTest);
+  server.on("/update", HTTP_POST, handleUpdate);
   server.begin();
 
   Serial.println("http Server Setup Complete.");
