@@ -9,6 +9,10 @@
 //---------------------------------------------------//
 
 #include <Wire.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
 #include "AE_TSL2572.h"
 AE_TSL2572 TSL2572;
 
@@ -22,6 +26,15 @@ byte gain_step = 0;
 //0x00：256サイクル(約  699ms)
 byte atime_cnt = 0xFF;
 bool shooting=false;
+
+const char SSID[] = "APEX-COMP";
+const char PASS[] = "kanzen";
+
+WebServer server(80);
+
+void handleTest(){
+  server.send(200,"text/plain","Hello from ESP32!");
+}
 
 void setup() {
   Serial.begin(115200);
@@ -39,8 +52,24 @@ void setup() {
   }
   else {
     Serial.println("Failed. Check connection!!");
-    while (1) {}
   }
+
+  WiFi.softAP(SSID, PASS);
+  delay(100);
+
+  IPAddress ip=WiFi.softAPIP();
+  Serial.println("Wi-Fi start.");
+  Serial.printf("SSID: ");
+  Serial.println(SSID);
+  Serial.printf("PASS: ");
+  Serial.println(PASS);
+  Serial.printf("IPAddress: ");
+  Serial.println(ip);
+
+  server.on("/",handleTest);
+  server.begin();
+
+  Serial.println("http Server Setup Complete.");
 }
 
 void watchFire(){
@@ -55,6 +84,7 @@ void watchFire(){
 }
 
 void loop() {
+  server.handleClient();
   //TSL2572.GetLux16()で照度を取得
   //TSL2572.GetLux16();
   //Serial.print(TSL2572.GetAdc0(), DEC);
