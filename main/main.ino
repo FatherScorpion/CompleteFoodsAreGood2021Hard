@@ -17,6 +17,9 @@
 #include "AE_TSL2572.h"
 AE_TSL2572 TSL2572;
 
+#define SENSOR_ADRS   0x40              // GP2Y0E03のI2Cアドレス
+#define DISTANCE_ADRS 0x5E              // Distance Value のデータアドレス
+
 //ゲイン　0～ 5 (x0.167 , x1.0 , x1.33 , x8 , x16 , x120)
 byte gain_step = 0;
 
@@ -137,6 +140,27 @@ void watchFire(){
   }
 }
 
+int checkDist(){
+  int  ans  ;
+  byte c[2] ;
+
+  Wire.beginTransmission(SENSOR_ADRS) ;        // 通信の開始処理
+  Wire.write(DISTANCE_ADRS) ;                  // 距離値を格納したテーブルのアドレスを指定する
+  ans = Wire.endTransmission() ;               // データの送信と終了処理
+  if (ans == 0) {
+       ans = Wire.requestFrom(SENSOR_ADRS,2) ; // GP2Y0E03にデータ送信要求をだし、2バイト受信する
+       c[0] = Wire.read()  ;                   // データの11-4ビット目を読み出す
+       c[1] = Wire.read()  ;                   // データの 3-0ビット目を読み出す
+       ans = ((c[0]*16+c[1]) / 16) / 4 ;       // 取り出した値から距離(cm)を計算する
+       Serial.print(ans) ;                     // シリアルモニターに表示させる
+       Serial.println("cm") ;
+  } else {
+       Serial.print("ERROR NO.=") ;            // GP2Y0E03と通信出来ない
+       Serial.println(ans) ;
+  }
+  return ans;
+}
+
 void loop() {
   server.handleClient();
   //TSL2572.GetLux16()で照度を取得
@@ -146,4 +170,6 @@ void loop() {
   watchFire();
   //自動ゲイン調整
   TSL2572.SetGainAuto();
+
+  //checkDist();
 }
