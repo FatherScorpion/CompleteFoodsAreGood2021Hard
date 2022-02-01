@@ -59,7 +59,21 @@ void handleTest(){ // ArduinoJsonのテスト
   server.send(200,"application/json",json_string);
 }
 
-void handleUpdate(){ // ArduinoJsonのテスト
+void handleDistance(){
+  DynamicJsonDocument doc(200);
+  double dist = checkDist();
+  doc["distance"] = dist;
+  
+  char json_string[255];
+  serializeJson(doc, json_string, sizeof(json_string));
+
+  Serial.print("distance:");
+  Serial.println(dist);
+
+  server.send(200, "application/json", json_string);
+}
+
+void handleUpdate(){
   DynamicJsonDocument doc(200);
   String input = server.arg("plain");
   Serial.println(input);
@@ -124,6 +138,7 @@ void setup() {
 
   server.on("/", HTTP_POST, handleTest);
   server.on("/update", HTTP_POST, handleUpdate);
+  server.on("/getDistance", HTTP_GET, handleDistance);
   server.begin();
 
   Serial.println("http Server Setup Complete.");
