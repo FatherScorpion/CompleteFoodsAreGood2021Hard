@@ -90,7 +90,7 @@ void handleUpdate(){
   backColor = doc["backColor"]; // 1
   textColor = doc["textColor"]; // 1
   magazineCapacity = doc["magazineCapacity"]; // 30
-  reloadDist = doc["reloadDist"]; // 10
+  reloadDist = doc["reloadDistance"]; // 10
 
   Serial.print("type:");
   Serial.println(type);
@@ -155,8 +155,8 @@ void watchFire(){
   }
 }
 
-int checkDist(){
-  int  ans  ;
+double checkDist(){
+  double  ans  ;
   byte c[2] ;
 
   Wire.beginTransmission(SENSOR_ADRS) ;        // 通信の開始処理
@@ -166,7 +166,7 @@ int checkDist(){
        ans = Wire.requestFrom(SENSOR_ADRS,2) ; // GP2Y0E03にデータ送信要求をだし、2バイト受信する
        c[0] = Wire.read()  ;                   // データの11-4ビット目を読み出す
        c[1] = Wire.read()  ;                   // データの 3-0ビット目を読み出す
-       ans = ((c[0]*16+c[1]) / 16) / 4 ;       // 取り出した値から距離(cm)を計算する
+       ans = ((c[0]*16.0+c[1]) / 16.0) / 4.0 ;       // 取り出した値から距離(cm)を計算する
        Serial.print(ans) ;                     // シリアルモニターに表示させる
        Serial.println("cm") ;
   } else {
