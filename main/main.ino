@@ -1,3 +1,4 @@
+
 //---------------------------------------------------//
 //  AE-TSL2572 <-> Arduino UNO
 //      Vin    <->    5V
@@ -47,6 +48,17 @@ int currentBullets = 30;
 
 const char SSID[] = "APEX-COMP"; // ESP32ap
 const char PASS[] = "kanzen"; // 12345678
+
+UWORD colors[] = {
+  WHITE,
+  BLACK,
+  BLUE,
+  MAGENTA,
+  YELLOW,
+  CYAN,
+  RED,
+  GREEN
+};
 
 WebServer server(80);
 
@@ -111,6 +123,9 @@ void handleUpdate(){
   Serial.println(magazineCapacity);
   Serial.print("reloadDist:");
   Serial.println(reloadDist);
+
+  Paint_Clear(colors[backColor]);
+  Paint_DrawString_EN(120, 120, "030",&Font24,  colors[backColor], colors[textColor]);
   
   server.send(200,"text/plain","success");
 }
@@ -168,12 +183,13 @@ void setup() {
   Paint_DrawLine  (120, 120, 70, 70,YELLOW ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 120, 176, 64,BLUE ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 120, 120, 210,RED ,DOT_PIXEL_2X2,LINE_STYLE_SOLID); 
-  Paint_Clear(RED);
+  Paint_Clear(colors[backColor]);
+  Paint_DrawString_EN(78, 110, "READY",&Font24,  colors[backColor], colors[textColor+1]);
   Serial.println("LCD done");
 }
 
 void watchFire(){
-  if(TSL2572.GetAdc0()>25){
+  if(TSL2572.GetAdc0()>35){
     if(!shooting){
         if(currentBullets>0)currentBullets--;
         Serial.print("Fire: ");
