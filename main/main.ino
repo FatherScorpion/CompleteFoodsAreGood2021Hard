@@ -8,6 +8,11 @@
 // J1 : ショート
 //---------------------------------------------------//
 
+#include <SPI.h>
+#include "Arduino.h"
+#include "LCD_Driver.h"
+#include "GUI_Paint.h"
+#include "image.h"
 #include <Wire.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -30,12 +35,15 @@ byte gain_step = 0;
 //0x00：256サイクル(約  699ms)
 byte atime_cnt = 0xFF;
 bool shooting=false;
+bool reloading=false;
 
 int type = 0;
 int backColor = 0;
 int textColor = 0;
 int magazineCapacity = 30;
-double reloadDist = 0;
+double reloadDist = 4;
+
+int currentBullets = 30;
 
 const char SSID[] = "APEX-COMP"; // ESP32ap
 const char PASS[] = "kanzen"; // 12345678
@@ -90,6 +98,7 @@ void handleUpdate(){
   backColor = doc["backColor"]; // 1
   textColor = doc["textColor"]; // 1
   magazineCapacity = doc["magazineCapacity"]; // 30
+  currentBullets = magazineCapacity;
   reloadDist = doc["reloadDistance"]; // 10
 
   Serial.print("type:");
@@ -124,7 +133,7 @@ void setup() {
     Serial.println("Failed. Check connection!!");
   }
 
-  WiFi.softAP(SSID, PASS);
+  /*WiFi.softAP(SSID, PASS);
   delay(100);
 
   IPAddress ip=WiFi.softAPIP();
@@ -141,13 +150,34 @@ void setup() {
   server.on("/getDistance", HTTP_GET, handleDistance);
   server.begin();
 
-  Serial.println("http Server Setup Complete.");
+  Serial.println("http Server Setup Complete.");*/
+
+  Config_Init();
+  LCD_Init();
+  LCD_SetBacklight(1000);
+  Paint_NewImage(LCD_WIDTH, LCD_HEIGHT, 0, BLACK);
+  /*Paint_Clear(GRAY);
+  Paint_DrawCircle(120,120, 120, BLUE ,DOT_PIXEL_2X2,DRAW_FILL_EMPTY);
+  Paint_DrawLine  (120, 0, 120, 12,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
+  Paint_DrawLine  (120, 228, 120, 240,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
+  Paint_DrawLine  (0, 120, 12, 120,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
+  Paint_DrawLine  (228, 120, 240, 120,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
+  Paint_DrawImage(gImage_70X70, 85, 25, 70, 70); 
+  Paint_DrawString_EN(56,140, "I'm genius",   &Font24,CYAN,  MAGENTA);
+  Paint_DrawString_EN(123, 123, "0123456789",&Font16,  BLACK, GREEN);
+  Paint_DrawLine  (120, 120, 70, 70,YELLOW ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
+  Paint_DrawLine  (120, 120, 176, 64,BLUE ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
+  Paint_DrawLine  (120, 120, 120, 210,RED ,DOT_PIXEL_2X2,LINE_STYLE_SOLID); */
+  Paint_Clear(RED);
+  Serial.println("LCD done");
 }
 
 void watchFire(){
   if(TSL2572.GetAdc0()>25){
     if(!shooting){
-        Serial.println("Fire"); 
+        if(currentBullets>0)currentBullets--;
+        Serial.print("Fire: ");
+        Serial.println(currentBullets); 
         shooting=true;
     }
   }else{
@@ -167,8 +197,8 @@ double checkDist(){
        c[0] = Wire.read()  ;                   // データの11-4ビット目を読み出す
        c[1] = Wire.read()  ;                   // データの 3-0ビット目を読み出す
        ans = ((c[0]*16.0+c[1]) / 16.0) / 4.0 ;       // 取り出した値から距離(cm)を計算する
-       Serial.print(ans) ;                     // シリアルモニターに表示させる
-       Serial.println("cm") ;
+       //Serial.print(ans) ;                     // シリアルモニターに表示させる
+       //Serial.println("cm") ;
   } else {
        Serial.print("ERROR NO.=") ;            // GP2Y0E03と通信出来ない
        Serial.println(ans) ;
@@ -177,12 +207,21 @@ double checkDist(){
 }
 
 void loop() {
-  server.handleClient();
   //TSL2572.GetLux16()で照度を取得
   //TSL2572.GetLux16();
   //Serial.print(TSL2572.GetAdc0(), DEC);
   //Serial.println("Lx");
   watchFire();
+  if(checkDist()<=reloadDist){
+    if(reloading){
+     currentBullets = magazineCapacity;
+     reloading=false;
+     Serial.println("RELORD");
+    }
+  }else{
+    reloading=true;
+    server.handleClient();
+  }
   //自動ゲイン調整
   TSL2572.SetGainAuto();
 
