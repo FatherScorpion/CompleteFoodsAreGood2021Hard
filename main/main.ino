@@ -82,7 +82,7 @@ void handleDistance(){
 }
 
 void handleUpdate(){
-  DynamicJsonDocument doc(200);
+  DynamicJsonDocument doc(500);
   String input = server.arg("plain");
   Serial.println(input);
   DeserializationError error = deserializeJson(doc, input);
@@ -133,7 +133,7 @@ void setup() {
     Serial.println("Failed. Check connection!!");
   }
 
-  /*WiFi.softAP(SSID, PASS);
+  WiFi.softAP(SSID, PASS);
   delay(100);
 
   IPAddress ip=WiFi.softAPIP();
@@ -150,13 +150,13 @@ void setup() {
   server.on("/getDistance", HTTP_GET, handleDistance);
   server.begin();
 
-  Serial.println("http Server Setup Complete.");*/
+  Serial.println("http Server Setup Complete.");
 
   Config_Init();
   LCD_Init();
   LCD_SetBacklight(1000);
   Paint_NewImage(LCD_WIDTH, LCD_HEIGHT, 0, BLACK);
-  /*Paint_Clear(GRAY);
+  Paint_Clear(GRAY);
   Paint_DrawCircle(120,120, 120, BLUE ,DOT_PIXEL_2X2,DRAW_FILL_EMPTY);
   Paint_DrawLine  (120, 0, 120, 12,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 228, 120, 240,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
@@ -167,7 +167,7 @@ void setup() {
   Paint_DrawString_EN(123, 123, "0123456789",&Font16,  BLACK, GREEN);
   Paint_DrawLine  (120, 120, 70, 70,YELLOW ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 120, 176, 64,BLUE ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
-  Paint_DrawLine  (120, 120, 120, 210,RED ,DOT_PIXEL_2X2,LINE_STYLE_SOLID); */
+  Paint_DrawLine  (120, 120, 120, 210,RED ,DOT_PIXEL_2X2,LINE_STYLE_SOLID); 
   Paint_Clear(RED);
   Serial.println("LCD done");
 }
@@ -220,8 +220,8 @@ void loop() {
     }
   }else{
     reloading=true;
-    server.handleClient();
   }
+  server.handleClient();
   //自動ゲイン調整
   TSL2572.SetGainAuto();
 
