@@ -38,12 +38,13 @@ byte atime_cnt = 0xFF;
 bool shooting=false;
 bool reloading=false;
 
-int type = 0;
+int type = -1;
 int backColor = 0;
 int textColor = 0;
 int magazineCapacity = 30;
 double reloadDist = 4;
 
+int befBullets = 30;
 int currentBullets = 30;
 
 const char SSID[] = "APEX-COMP"; // ESP32ap
@@ -61,6 +62,47 @@ UWORD colors[] = {
 };
 
 WebServer server(80);
+
+SemaphoreHandle_t xMutex = NULL; 
+
+void drawText(int bullets){
+  String str;
+  char c[256];
+  static int befBullets;
+  if(bullets==magazineCapacity) Paint_Clear(colors[backColor]);
+  switch(type){
+    case 0:
+      if(bullets<10){
+        str="00"+String(bullets);
+      }else if(bullets<100){
+        str="0"+String(bullets);
+      }else{
+        str=String(bullets);
+      }
+      strcpy(c, str.c_str());
+      Paint_DrawString_EN(95, 110, c,  &Font24,  colors[backColor], colors[textColor]);
+      break;
+
+    case 1:
+      if(bullets==magazineCapacity){
+        Paint_DrawRectangle(20,110,220,130,colors[textColor],DOT_PIXEL_2X2,DRAW_FILL_EMPTY);
+        befBullets=magazineCapacity;
+      }else{
+        if(magazineCapacity==0) break;
+        int befX=20+((200*befBullets)/magazineCapacity);
+        int nowX=20+((200*bullets)/magazineCapacity);
+        Paint_DrawRectangle(nowX,112,befX,130,colors[textColor],DOT_PIXEL_1X1,DRAW_FILL_FULL);
+        befBullets=bullets;
+      }
+      break;
+      
+    default:
+      Paint_DrawString_EN(78, 110, "ERROR",&Font24,  colors[backColor], colors[textColor]);
+  }
+  if(bullets==0){
+    Paint_DrawString_EN(78, 140, "EMPTY",&Font24,  colors[backColor], colors[textColor]);
+  }
+}
 
 void handleTest(){ // ArduinoJsonのテスト
   DynamicJsonDocument doc(200);
@@ -110,7 +152,12 @@ void handleUpdate(){
   backColor = doc["backColor"]; // 1
   textColor = doc["textColor"]; // 1
   magazineCapacity = doc["magazineCapacity"]; // 30
-  currentBullets = magazineCapacity;
+  drawText(magazineCapacity);
+  if (xSemaphoreTake( xMutex, ( portTickType ) 100 ) == pdTRUE) {
+    currentBullets = magazineCapacity;
+    xSemaphoreGive(xMutex);
+  }
+  befBullets=magazineCapacity;
   reloadDist = doc["reloadDistance"]; // 10
 
   Serial.print("type:");
@@ -123,11 +170,41 @@ void handleUpdate(){
   Serial.println(magazineCapacity);
   Serial.print("reloadDist:");
   Serial.println(reloadDist);
-
-  Paint_Clear(colors[backColor]);
-  Paint_DrawString_EN(120, 120, "030",&Font24,  colors[backColor], colors[textColor]);
   
   server.send(200,"text/plain","success");
+}
+
+void watchFire(){
+  if(TSL2572.GetAdc0()>35){
+    if(!shooting){
+        if(currentBullets>0){
+          currentBullets--;
+        }
+        Serial.print("Fire: ");
+        Serial.println(currentBullets); 
+        shooting=true;
+    }
+  }else{
+    shooting=false;  
+  }
+}
+
+void subProcess(void * pvParameters) { //描画用のサブプロセス
+  while(1){
+    if(type!=-1){
+      if (xSemaphoreTake( xMutex, ( portTickType ) 100 ) == pdTRUE) {
+        if(currentBullets!=befBullets){
+          int tmp=currentBullets;
+          xSemaphoreGive(xMutex);
+          befBullets=tmp;
+          drawText(tmp);
+        }else{
+          xSemaphoreGive(xMutex);
+        }
+      }
+    } 
+    delay(100);
+  }
 }
 
 void setup() {
@@ -178,27 +255,19 @@ void setup() {
   Paint_DrawLine  (0, 120, 12, 120,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
   Paint_DrawLine  (228, 120, 240, 120,GREEN ,DOT_PIXEL_4X4,LINE_STYLE_SOLID);
   Paint_DrawImage(gImage_70X70, 85, 25, 70, 70); 
-  Paint_DrawString_EN(56,140, "I'm genius",   &Font24,CYAN,  MAGENTA);
-  Paint_DrawString_EN(123, 123, "0123456789",&Font16,  BLACK, GREEN);
+  Paint_DrawString_EN(10,140, "Complete Foods",   &Font20,CYAN,  MAGENTA);
+  Paint_DrawString_EN(95,155, "Are Good.", &Font20,CYAN, MAGENTA);
+  Paint_DrawString_EN(123, 123, "2021~2022",&Font16,  BLACK, GREEN);
   Paint_DrawLine  (120, 120, 70, 70,YELLOW ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 120, 176, 64,BLUE ,DOT_PIXEL_3X3,LINE_STYLE_SOLID);
   Paint_DrawLine  (120, 120, 120, 210,RED ,DOT_PIXEL_2X2,LINE_STYLE_SOLID); 
   Paint_Clear(colors[backColor]);
   Paint_DrawString_EN(78, 110, "READY",&Font24,  colors[backColor], colors[textColor+1]);
   Serial.println("LCD done");
-}
 
-void watchFire(){
-  if(TSL2572.GetAdc0()>35){
-    if(!shooting){
-        if(currentBullets>0)currentBullets--;
-        Serial.print("Fire: ");
-        Serial.println(currentBullets); 
-        shooting=true;
-    }
-  }else{
-    shooting=false;  
-  }
+  xMutex = xSemaphoreCreateMutex();
+  xSemaphoreGive(xMutex);
+  xTaskCreatePinnedToCore(subProcess, "subProcess", 4096, NULL, 1, NULL, 0); //Core 0でタスク開始
 }
 
 double checkDist(){
@@ -223,14 +292,12 @@ double checkDist(){
 }
 
 void loop() {
-  //TSL2572.GetLux16()で照度を取得
-  //TSL2572.GetLux16();
-  //Serial.print(TSL2572.GetAdc0(), DEC);
-  //Serial.println("Lx");
-  watchFire();
   if(checkDist()<=reloadDist){
     if(reloading){
-     currentBullets = magazineCapacity;
+     if (xSemaphoreTake( xMutex, ( portTickType ) 100 ) == pdTRUE) {
+       currentBullets = magazineCapacity;
+       xSemaphoreGive(xMutex);
+     }
      reloading=false;
      Serial.println("RELORD");
     }
@@ -241,5 +308,6 @@ void loop() {
   //自動ゲイン調整
   TSL2572.SetGainAuto();
 
+  watchFire();
   //checkDist();
 }
