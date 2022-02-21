@@ -292,7 +292,7 @@ double checkDist(){
 }
 
 void loop() {
-  if(checkDist()<=reloadDist){
+  if(checkDist()<=reloadDist+2){
     if(reloading){
      if (xSemaphoreTake( xMutex, ( portTickType ) 100 ) == pdTRUE) {
        currentBullets = magazineCapacity;
