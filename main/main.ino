@@ -50,6 +50,8 @@ int currentBullets = 30;
 const char SSID[] = "APEX-COMP"; // ESP32ap
 const char PASS[] = "kanzen"; // 12345678
 
+int sikii=100;
+
 UWORD colors[] = {
   WHITE,
   BLACK,
@@ -136,6 +138,10 @@ void handleDistance(){
 }
 
 void handleUpdate(){
+  sikii=TSL2572.GetAdc0();
+  Serial.print("sikii: ");
+  Serial.println(sikii);
+  
   DynamicJsonDocument doc(500);
   String input = server.arg("plain");
   Serial.println(input);
@@ -175,13 +181,17 @@ void handleUpdate(){
 }
 
 void watchFire(){
-  if(TSL2572.GetAdc0()>35){
+  int num=TSL2572.GetAdc0();
+  //Serial.println(num);
+  if(num>=sikii+30){
     if(!shooting){
         if(currentBullets>0){
           currentBullets--;
         }
         Serial.print("Fire: ");
         Serial.println(currentBullets); 
+        Serial.print("num: ");
+        Serial.println(num);
         shooting=true;
     }
   }else{
